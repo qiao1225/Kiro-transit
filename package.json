@@ -11,7 +11,8 @@
     "desktop:dev": "electron .",
     "desktop:pack": "electron-builder --mac dmg zip --universal",
     "desktop:pack:arm64": "electron-builder --mac dmg zip --arm64",
-    "setup": "node scripts/setup.mjs"
+    "setup": "node scripts/setup.mjs && npm run build:icons",
+    "build:icons": "electron scripts/generate-icons.mjs"
   },
   "build": {
     "appId": "com.kiro.desktop.relay",
@@ -31,6 +32,7 @@
     },
     "mac": {
       "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
       "target": [
         {
           "target": "dmg",

@@ -1,14 +1,19 @@
+<p align="center">
+  <img src="build/icon.png" width="128" height="128" alt="Kiro Desktop Relay Logo" />
+</p>
+
 # Kiro Desktop Relay
 
 用 **Kiro 账号额度**驱动 **Claude Code** 的本地中转。Claude Code 的请求先发到本地 Relay，再经原生 Gateway 用你在本机的 Kiro 登录凭据访问上游模型，无需额外申请 API Key。
 
-> 端到端本地运行，凭据不出本机。桌面 App 提供完整的启停、凭据、模型与接管管理界面。
+> 端到端本地运行，凭据不出本机。桌面 App 提供完整的启停、凭据、模型与接管管理界面。集成 macOS 极简自适应托盘图标（Tray）与精美的 Squircle 应用图标。
 
 ---
 
 ## 特性
 
 - **桌面控制台**（Electron）：一键启停 Relay/Gateway、查看状态、管理凭据与模型、诊断与日志。
+- **全新视觉设计**：集成基于原有 K 字母 Logo 构建的 macOS 风格 Squircle 高清大图标，及 macOS 菜单栏自适应（Template）线条托盘小图标。
 - **自动识别 Kiro 凭据**：扫描本机 Kiro 登录缓存并自动选用；后台守护在到期前自动刷新，失效时引导重新登录。
 - **Claude 接管**：一键写入 `~/.claude/settings.json`，支持 Haiku / Sonnet / Opus / Fable 四角色分别映射模型。
 - **Anthropic Messages 兼容端点**：本地 `POST /v1/messages`，可直接对接 Claude Code 或其他兼容客户端。
@@ -48,10 +53,11 @@ Kiro 上游（Claude 系列模型）
 
 ```bash
 npm install
+npm run build:icons            # 渲染并生成应用图标与托盘小图标
 npm run desktop:dev            # 本地开发运行
 ```
 
-打开后 App 会自动识别 Kiro 凭据并启动 Relay/Gateway，在「配置」页点「写入 Claude」即可完成接管。
+打开后 App 会自动识别 Kiro 凭据并启动 Relay/Gateway，在「配置」页点「写入 Claude」即可完成接管。图标已与代码原生的 K 字母 Logo 保持视觉完全一致。
 
 打包 macOS 应用：
 

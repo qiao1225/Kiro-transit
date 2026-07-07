@@ -1300,12 +1300,10 @@ function readRecentLogs() {
 }
 
 function createTrayImage() {
-  const svg = `
-  <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
-    <rect x="4" y="4" width="24" height="24" rx="6" fill="#0B0D0E"/>
-    <path d="M10 18.5h12M10 13.5h12M13 10l-3 3.5 3 3.5" stroke="#D6A84F" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`;
-  return nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`);
+  const trayPath = path.join(__dirname, "assets", "trayTemplate.png");
+  const image = nativeImage.createFromPath(trayPath);
+  image.setTemplateImage(true);
+  return image;
 }
 
 function updateTray() {
