@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kiro → Claude 中转</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+        background: #0b0d0e;
+        color: #e7e9ea;
+        line-height: 1.5;
+      }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+      h1 { font-size: 22px; margin: 0 0 4px; }
+      .eyebrow { color: #d6a84f; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 24px; }
+      .card { background: #14171a; border: 1px solid #23272b; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+      .card h2 { font-size: 14px; margin: 0 0 14px; color: #9aa0a6; font-weight: 600; }
+      .kv { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; font-size: 14px; }
+      .kv dt { color: #9aa0a6; }
+      .kv dd { margin: 0; word-break: break-all; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+      .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #23272b; }
+      .tag.ok { background: #143b21; color: #6ee7a2; }
+      .tag.bad { background: #3b1414; color: #f28b82; }
+      button {
+        font: inherit; cursor: pointer; border: 1px solid #2f343a; background: #1c2024;
+        color: #e7e9ea; border-radius: 8px; padding: 8px 14px;
+      }
+      button.primary { background: #d6a84f; color: #14171a; border-color: #d6a84f; font-weight: 600; }
+      button:disabled { opacity: .5; cursor: default; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      input { font: inherit; background: #0f1214; border: 1px solid #2f343a; color: #e7e9ea; border-radius: 8px; padding: 8px 10px; }
+      pre { background: #0f1214; border: 1px solid #23272b; border-radius: 8px; padding: 12px; overflow: auto; font-size: 12px; }
+      .muted { color: #9aa0a6; font-size: 13px; }
+      a { color: #d6a84f; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="eyebrow">Local relay · Claude only</p>
+      <h1>Kiro → Claude 中转</h1>
+      <p class="muted">用 Kiro 账号额度驱动 Claude Code。本页只提供 Anthropic Messages 端点。桌面 App「Kiro Desktop Relay」提供完整管理界面。</p>
+
+      <div class="card">
+        <h2>状态</h2>
+        <dl class="kv">
+          <dt>Gateway</dt><dd id="gwState">检测中…</dd>
+          <dt>凭据</dt><dd id="credState">--</dd>
+          <dt>账号</dt><dd id="account">--</dd>
+          <dt>模型数</dt><dd id="modelCount">--</dd>
+          <dt>Anthropic 端点</dt><dd class="mono" id="baseUrl">--</dd>
+        </dl>
+      </div>
+
+      <div class="card">
+        <h2>Claude Code 壳子 Key</h2>
+        <div class="row">
+          <input id="keyName" placeholder="Key 名称，例如：Claude 主力" />
+          <button class="primary" id="createKey">创建 Claude Key</button>
+        </div>
+        <div id="keyList" style="margin-top:14px"></div>
+      </div>
+
+      <div class="card" id="configCard" style="display:none">
+        <h2>Claude Code 配置</h2>
+        <p class="muted">写入 <span class="mono">~/.claude/settings.json</span> 的 <span class="mono">env</span>，或在 CC Switch 选 Anthropic Messages 协议。</p>
+        <pre id="configOut"></pre>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      async function api(path, opts) {
+        const res = await fetch(path, opts);
+        return res.json();
+      }
+
+      async function loadStatus() {
+        try {
+          const s = await api("/api/status");
+          const gwOk = s.gatewayOk && s.creds?.apiOk !== false && !s.creds?.expired;
+          $("gwState").innerHTML = s.gatewayOk
+            ? `<span class="tag ok">在线</span> ${s.gatewayMode || ""}`
+            : `<span class="tag bad">离线</span>`;
+          $("credState").innerHTML = s.creds?.apiOk
+            ? `<span class="tag ok">可用</span>`
+            : `<span class="tag bad">${s.creds?.apiReason || "不可用"}</span>`;
+          $("account").textContent = s.creds?.email || "--";
+          $("modelCount").textContent = s.modelCount || "--";
+          $("baseUrl").textContent = (s.relayUrl || "").replace(/\/v1$/, "") + "/v1/messages";
+        } catch (e) {
+          $("gwState").innerHTML = `<span class="tag bad">无法连接中转服务</span>`;
+        }
+      }
+
+      async function loadKeys() {
+        const data = await api("/api/keys");
+        const keys = data.keys || [];
+        $("keyList").innerHTML = keys.length
+          ? keys.map((k) => `
+              <div class="row" style="justify-content:space-between; border-top:1px solid #23272b; padding:10px 0">
+                <div><strong>${k.name}</strong> <span class="mono muted">${k.prefix}</span></div>
+                <div class="row">
+                  <button data-config="${k.id}">查看配置</button>
+                  <button data-del="${k.id}">删除</button>
+                </div>
+              </div>`).join("")
+          : `<p class="muted">还没有 Key，点上面创建一个。</p>`;
+        $("keyList").querySelectorAll("[data-config]").forEach((b) =>
+          (b.onclick = () => showConfig(b.dataset.config))
+        );
+        $("keyList").querySelectorAll("[data-del]").forEach((b) =>
+          (b.onclick = async () => { await api(`/api/keys/${b.dataset.del}`, { method: "DELETE" }); loadKeys(); })
+        );
+      }
+
+      async function showConfig(keyId) {
+        const cfg = await api(`/api/cc-switch-config?keyId=${keyId}`);
+        $("configCard").style.display = "block";
+        $("configOut").textContent = cfg.quickCopy || JSON.stringify(cfg, null, 2);
+        $("configCard").scrollIntoView({ behavior: "smooth" });
+      }
+
+      $("createKey").onclick = async () => {
+        $("createKey").disabled = true;
+        try {
+          const name = $("keyName").value.trim() || "Claude Key";
+          const res = await api("/api/keys", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, targetApp: "claude" }),
+          });
+          $("keyName").value = "";
+          await loadKeys();
+          if (res.key) showConfig(res.key.id);
+        } finally {
+          $("createKey").disabled = false;
+        }
+      };
+
+      loadStatus();
+      loadKeys();
+      setInterval(loadStatus, 5000);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;" />
+    <title>Kiro Desktop Relay</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="rail" aria-label="侧边控制">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="brandGrad" x1="5" y1="4" x2="27" y2="28" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#aab4ff" />
+                  <stop offset="1" stop-color="#5eead4" />
+                </linearGradient>
+              </defs>
+              <path d="M10 5.5V26.5" stroke="url(#brandGrad)" stroke-width="4.2" stroke-linecap="round" />
+              <path d="M22 7L11.5 16L23 26" stroke="url(#brandGrad)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="25" cy="6" r="2.3" fill="#7cf2d8" />
+            </svg>
+          </div>
+          <div>
+            <p class="eyebrow">Kiro Desktop</p>
+            <h1>Relay Console</h1>
+          </div>
+        </div>
+
+        <section class="target-rail" aria-label="接管目标">
+          <p class="rail-title">接管目标</p>
+          <button class="mode-btn active" type="button" data-mode="claude">
+            <i class="mode-icon" data-lucide="route"></i>
+            <span>Claude Code</span>
+            <small id="sideTargetState">管理路由</small>
+          </button>
+        </section>
+
+        <nav class="nav" aria-label="页面导航">
+          <button class="nav-btn active" type="button" data-view="overview"><i data-lucide="layout-dashboard"></i>总览</button>
+          <button class="nav-btn" type="button" data-view="config"><i data-lucide="sliders-horizontal"></i>配置</button>
+          <button class="nav-btn" type="button" data-view="diagnostics"><i data-lucide="activity"></i>诊断</button>
+          <button class="nav-btn" type="button" data-view="logs"><i data-lucide="scroll-text"></i>日志</button>
+        </nav>
+
+        <section class="rail-ops" aria-label="服务控制">
+          <p class="rail-title">服务控制</p>
+          <div class="pill-toolbar">
+            <button id="startAllBtn" class="icon-btn success" type="button" title="启动">
+              <i class="btn-icon" data-lucide="play"></i>
+            </button>
+            <button id="restartAllBtn" class="icon-btn" type="button" title="重启">
+              <i class="btn-icon" data-lucide="rotate-cw"></i>
+            </button>
+            <button id="stopAllBtn" class="icon-btn danger" type="button" title="停止">
+              <i class="btn-icon" data-lucide="square"></i>
+            </button>
+          </div>
+        </section>
+
+        <button id="openLogsBtn" class="plain-btn" type="button"><i class="btn-icon" data-lucide="folder-open"></i>打开日志目录</button>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Local relay gateway</p>
+            <h2>Claude 中转管理</h2>
+            <p id="topbarSubtitle" class="topbar-subtitle">正在读取本地服务状态</p>
+          </div>
+          <div class="topbar-actions">
+            <span id="syncState" class="sync-state">未同步</span>
+            <button id="syncAllBtn" class="primary-btn" type="button">
+              <i class="btn-icon" data-lucide="refresh-cw"></i>同步全部
+            </button>
+            <div id="appBadge" class="status-badge">检测中</div>
+          </div>
+        </header>
+
+        <section class="status-strip" aria-label="核心状态">
+          <article class="metric metric-relay">
+            <div class="metric-icon"><i data-lucide="radio-tower"></i></div>
+            <div class="metric-copy">
+              <p>Relay</p>
+              <strong id="relayState">--</strong>
+              <span id="relayUrl">--</span>
+            </div>
+          </article>
+          <article class="metric metric-gateway">
+            <div class="metric-icon"><i data-lucide="server-cog"></i></div>
+            <div class="metric-copy">
+              <p>Gateway</p>
+              <strong id="gatewayState">--</strong>
+              <span id="gatewayUrl">--</span>
+            </div>
+          </article>
+          <article class="metric metric-claude">
+            <div class="metric-icon"><i data-lucide="square-terminal"></i></div>
+            <div class="metric-copy">
+              <p>Claude</p>
+              <strong id="claudeState">--</strong>
+              <span id="claudeBaseUrl">--</span>
+            </div>
+          </article>
+          <article class="metric metric-models">
+            <div class="metric-icon"><i data-lucide="layers-3"></i></div>
+            <div class="metric-copy">
+              <p>Models</p>
+              <strong id="modelCount">--</strong>
+              <span id="modelSource">--</span>
+            </div>
+          </article>
+        </section>
+
+        <section class="view active" data-view-panel="overview">
+          <section class="operator-panel command-surface" aria-label="控制中心">
+            <div class="operator-copy">
+              <p class="eyebrow">Control center</p>
+              <h3>控制中心</h3>
+              <p id="operationHint">刷新凭据、运行诊断，或点右上角「同步全部」统一刷新。</p>
+            </div>
+            <div class="operator-actions">
+              <button id="refreshCredentialsBtn" class="primary-btn" type="button">
+                <i class="btn-icon" data-lucide="key-round"></i>刷新凭据
+              </button>
+              <button id="runDiagnosticsBtn" class="ghost-btn" type="button">
+                <i class="btn-icon" data-lucide="stethoscope"></i>运行诊断
+              </button>
+            </div>
+          </section>
+
+          <div class="overview-grid">
+            <article class="module runtime-module">
+              <div class="module-head">
+                <div>
+                  <p class="eyebrow">Runtime</p>
+                  <h3>服务运行</h3>
+                </div>
+                <span id="serviceSummary" class="pill">--</span>
+              </div>
+              <div class="control-grid">
+                <button id="startAllBtnOverview" class="primary-btn" type="button"><i class="btn-icon" data-lucide="play"></i>启动全部</button>
+                <button id="restartBtn" class="ghost-btn" type="button"><i class="btn-icon" data-lucide="rotate-cw"></i>重启全部</button>
+                <button id="stopBtn" class="ghost-btn danger" type="button"><i class="btn-icon" data-lucide="square"></i>停止全部</button>
+              </div>
+              <dl class="kv">
+                <div><dt>Relay 端口</dt><dd id="overviewRelayPort">--</dd></div>
+                <div><dt>Gateway 端口</dt><dd id="overviewGatewayPort">--</dd></div>
+                <div><dt>服务配置</dt><dd><span class="path-clickable" id="configPath">--</span></dd></div>
+                <div><dt>数据目录</dt><dd><span class="path-clickable" id="userDataPath">--</span></dd></div>
+              </dl>
+            </article>
+
+            <article class="module credential-module">
+              <div class="module-head">
+                <div>
+                  <p class="eyebrow">Credential</p>
+                  <h3>凭据与守护</h3>
+                </div>
+                <span id="credentialApiState" class="pill">--</span>
+              </div>
+              <div class="segmented" role="group" aria-label="凭据来源">
+                <button id="localModeBtn" type="button">本地 Kiro 自动识别</button>
+              </div>
+              <dl class="kv">
+                <div><dt>来源</dt><dd id="credentialState">--</dd></div>
+                <div><dt>当前账号</dt><dd id="credentialAccount">--</dd></div>
+                <div><dt>后台守护</dt><dd id="credentialGuardState">--</dd></div>
+                <div><dt>守护细节</dt><dd id="credentialGuardDetail">--</dd></div>
+                <div><dt>凭据文件</dt><dd><span class="path-clickable" id="credentialFilePath">--</span></dd></div>
+                <div><dt>外部依赖</dt><dd id="accountsPath">不使用外部工具</dd></div>
+              </dl>
+            </article>
+
+            <article class="module routing-module">
+              <div class="module-head">
+                <div>
+                  <p class="eyebrow">Routing Flow</p>
+                  <h3>接管概览</h3>
+                </div>
+                <span id="targetSummary" class="pill">--</span>
+              </div>
+              <div class="routing-flow">
+                <div class="flow-node claude-node">
+                  <i data-lucide="square-terminal"></i>
+                  <span>Claude Code</span>
+                  <div class="node-status" id="overviewClaude">--</div>
+                </div>
+                <div class="flow-arrow">
+                  <i data-lucide="arrow-right"></i>
+                  <span class="flow-label">Relay</span>
+                </div>
+                <div class="flow-node gateway-node">
+                  <i data-lucide="server-cog"></i>
+                  <span>Gateway</span>
+                  <div class="node-status" id="targetModeLabel">--</div>
+                </div>
+                <div class="flow-arrow">
+                  <i data-lucide="arrow-right"></i>
+                  <span class="flow-label">Sync</span>
+                </div>
+                <div class="flow-node kiro-node">
+                  <i data-lucide="cloud"></i>
+                  <span>Kiro API</span>
+                  <div class="node-status" id="overviewDefaultModel">--</div>
+                </div>
+              </div>
+              <div class="routing-paths">
+                <dl class="kv compact-kv">
+                  <div><dt>Claude</dt><dd><span class="path-clickable" id="claudeSettingsPath" title="Claude 配置">--</span></dd></div>
+                  <div><dt>Models</dt><dd><span class="path-clickable" id="modelConfigPath" title="模型配置">--</span></dd></div>
+                  <div><dt>Creds</dt><dd><span class="path-clickable" id="runtimeCredentialPath" title="运行凭据">--</span></dd></div>
+                </dl>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="config">
+          <article class="module config-module">
+            <div class="module-head">
+              <div>
+                <p class="eyebrow">Claude Code</p>
+                <h3>接管与模型角色</h3>
+              </div>
+              <span id="claudeTargetBadge" class="pill">--</span>
+            </div>
+            <div class="target-toolbar">
+              <label class="switch-row">
+                <input id="targetClaudeEnabled" type="checkbox" />
+                <span>启用 Claude 接管</span>
+              </label>
+              <button id="applyTargetsBtnTop" class="primary-btn" type="button"><i class="btn-icon" data-lucide="check"></i>应用接管</button>
+              <button id="installClaudeBtn" class="ghost-btn" type="button"><i class="btn-icon" data-lucide="file-input"></i>写入 Claude</button>
+              <button id="disableClaudeBtn" class="ghost-btn danger" type="button"><i class="btn-icon" data-lucide="square"></i>关闭 Claude</button>
+              <button id="restoreClaudeBtn" class="ghost-btn" type="button"><i class="btn-icon" data-lucide="undo-2"></i>恢复</button>
+              <button id="testClaudeBtn" class="ghost-btn" type="button"><i class="btn-icon" data-lucide="flask-conical"></i>测试</button>
+              <button id="clearClaudeModelPinBtn" class="ghost-btn" type="button"><i class="btn-icon" data-lucide="wrench"></i>修复模型切换</button>
+            </div>
+            <dl class="kv compact-kv">
+              <div><dt>Base URL</dt><dd id="claudeTargetBaseUrl">--</dd></div>
+              <div><dt>模型状态</dt><dd id="claudeTargetModel">--</dd></div>
+              <div><dt>鉴权</dt><dd id="claudeAuthState">--</dd></div>
+            </dl>
+            <div class="role-grid-container">
+              <div class="role-default-row">
+                <label>默认模型<select id="claudeDefaultModel"></select></label>
+                <label>内部小任务<select id="claudeSmallFastModel"></select></label>
+                <label>思考强度
+                  <select id="reasoningEffort">
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                    <option value="xhigh">xhigh</option>
+                    <option value="max">max</option>
+                  </select>
+                </label>
+              </div>
+              <div id="qualityLockNote" class="quality-lock-note" hidden>
+                <div>
+                  <strong>Opus 优先，角色分离</strong>
+                  <span>四个角色可单独映射，Claude 内可继续使用 /model</span>
+                </div>
+                <code id="qualityLockModel">--</code>
+              </div>
+              <div class="role-grid grid-2x2">
+                <div class="role-card haiku-card">
+                  <div class="role-card-header">
+                    <i data-lucide="zap"></i><span>Haiku</span>
+                    <small>Fast & Small</small>
+                  </div>
+                  <label>映射模型<select id="claudeHaikuModel"></select></label>
+                  <label>显示名称<input id="claudeHaikuName" type="text" spellcheck="false" /></label>
+                </div>
+                <div class="role-card sonnet-card">
+                  <div class="role-card-header">
+                    <i data-lucide="scale"></i><span>Sonnet</span>
+                    <small>Balanced</small>
+                  </div>
+                  <label>映射模型<select id="claudeSonnetModel"></select></label>
+                  <label>显示名称<input id="claudeSonnetName" type="text" spellcheck="false" /></label>
+                </div>
+                <div class="role-card opus-card">
+                  <div class="role-card-header">
+                    <i data-lucide="brain"></i><span>Opus</span>
+                    <small>Powerful</small>
+                  </div>
+                  <label>映射模型<select id="claudeOpusModel"></select></label>
+                  <label>显示名称<input id="claudeOpusName" type="text" spellcheck="false" /></label>
+                </div>
+                <div class="role-card fable-card">
+                  <div class="role-card-header">
+                    <i data-lucide="book-open"></i><span>Fable</span>
+                    <small>Creative</small>
+                  </div>
+                  <label>映射模型<select id="claudeFableModel"></select></label>
+                  <label>显示名称<input id="claudeFableName" type="text" spellcheck="false" /></label>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="module catalog-module">
+            <div class="module-head">
+              <div>
+                <p class="eyebrow">Model catalog</p>
+                <h3>模型目录</h3>
+              </div>
+              <div class="tool-row">
+                <span id="modelUpdatedAt" class="muted">--</span>
+                <button id="refreshModelsBtn" class="ghost-btn compact" type="button"><i class="btn-icon" data-lucide="cloud-download"></i>获取模型</button>
+                <button id="addModelBtn" class="ghost-btn compact" type="button"><i class="btn-icon" data-lucide="plus"></i>添加自定义</button>
+                <button id="saveModelsBtn" class="primary-btn compact" type="button"><i class="btn-icon" data-lucide="save"></i>保存配置</button>
+              </div>
+            </div>
+            <div class="model-table-wrap" aria-label="模型目录">
+              <table class="model-table">
+                <thead>
+                  <tr>
+                    <th>启用</th>
+                    <th>模型 ID</th>
+                    <th>显示名称</th>
+                    <th>上下文</th>
+                    <th>来源</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="modelRows"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="view" data-view-panel="diagnostics">
+          <article class="module diagnostics-module">
+            <div class="module-head">
+              <div>
+                <p class="eyebrow">Diagnostics</p>
+                <h3>诊断面板</h3>
+              </div>
+              <button id="runDiagnosticsBtnPanel" class="primary-btn compact" type="button"><i class="btn-icon" data-lucide="activity"></i>运行诊断</button>
+            </div>
+            <div class="diagnostic-grid">
+              <dl class="kv">
+                <div><dt>Kiro 结论</dt><dd id="diagKiroConclusion">--</dd></div>
+                <div><dt>账号</dt><dd id="diagKiroAccount">--</dd></div>
+                <div><dt>API</dt><dd id="diagKiroApi">--</dd></div>
+                <div><dt>凭据文件</dt><dd><span class="path-clickable" id="diagKiroFile">--</span></dd></div>
+              </dl>
+              <dl class="kv">
+                <div><dt>Claude 结论</dt><dd id="diagClaudeConclusion">--</dd></div>
+                <div><dt>接管</dt><dd id="diagClaudeManaged">--</dd></div>
+                <div><dt>鉴权</dt><dd id="diagClaudeAuth">--</dd></div>
+                <div><dt>探测</dt><dd id="diagClaudeProbe">--</dd></div>
+              </dl>
+            </div>
+            <pre id="diagnosticsOutput" class="console">尚未运行诊断。</pre>
+          </article>
+        </section>
+
+        <section class="view" data-view-panel="logs">
+          <div class="section-grid two-col">
+            <article class="module output-module">
+              <div class="module-head">
+                <div>
+                  <p class="eyebrow">Output</p>
+                  <h3>操作输出</h3>
+                </div>
+              </div>
+              <pre id="testOutput" class="console">尚未执行操作</pre>
+            </article>
+            <article class="module logs-module">
+              <div class="module-head">
+                <div>
+                  <p class="eyebrow">Logs</p>
+                  <h3>最近日志</h3>
+                </div>
+                <button id="refreshLogsBtn" class="ghost-btn compact" type="button"><i class="btn-icon" data-lucide="refresh-cw"></i>同步日志</button>
+              </div>
+              <pre id="logs" class="console">正在读取日志...</pre>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="./icons.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

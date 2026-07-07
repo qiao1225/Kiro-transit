@@ -1,0 +1,76 @@
+{
+  "name": "kiro-codex",
+  "version": "1.0.3",
+  "private": true,
+  "type": "module",
+  "description": "Kiro Desktop Relay for Claude Code",
+  "main": "desktop/main.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "gateway": "node native-gateway.mjs",
+    "desktop:dev": "electron .",
+    "desktop:pack": "electron-builder --mac dmg zip --universal",
+    "desktop:pack:arm64": "electron-builder --mac dmg zip --arm64",
+    "setup": "node scripts/setup.mjs"
+  },
+  "build": {
+    "appId": "com.kiro.desktop.relay",
+    "productName": "Kiro Desktop Relay",
+    "asar": false,
+    "files": [
+      "desktop/**/*",
+      "lib/**/*",
+      "public/**/*",
+      "scripts/**/*",
+      "server.mjs",
+      "native-gateway.mjs",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
+  },
+  "devDependencies": {
+    "electron": "^43.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "lucide": "^1.23.0"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "port": 3920,
+  "gatewayPort": 8000,
+  "gatewayMode": "native",
+  "credentialMode": "local",
+  "kiroCredsFile": "auto",
+  "kiroAccountsFile": null,
+  "kiroApiRegion": "us-east-1",
+  "ccSwitchProxyPort": 15721
+}

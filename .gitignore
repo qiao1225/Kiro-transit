@@ -1,0 +1,33 @@
+# --- Dependencies ---
+node_modules/
+
+# --- Build output / packaged desktop app (regenerate with npm run desktop:pack) ---
+release/
+dist/
+out/
+*.dmg
+*.zip
+*.blockmap
+
+# --- Local runtime config & data (contain secrets / machine-specific paths) ---
+config.json
+data/
+*.local.json
+
+# --- Secrets / environment ---
+.env
+.env.*
+!.env.example
+
+# --- Logs ---
+logs/
+*.log
+
+# --- Backups & one-off dumps ---
+bak/
+*.bak
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+*.swp
