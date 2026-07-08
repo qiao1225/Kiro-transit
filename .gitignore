@@ -9,6 +9,9 @@ out/
 *.zip
 *.blockmap
 
+# Installer DMG intentionally published in-repo via Git LFS
+!installer/*.dmg
+
 # --- Local runtime config & data (contain secrets / machine-specific paths) ---
 config.json
 data/
